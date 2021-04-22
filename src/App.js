@@ -166,7 +166,11 @@ class App extends Component {
           var event1 = document.createEvent('Event');
           event1.initEvent('input', true, true);
           console.log(that[data.type+"El"]);
-          that[data.type+"El"].value = (that[data.type+"El"].value*1)+ (data.delta ? 10 : -10);
+          var deltaValue = 10;
+          if(data.type =="pan"  || data.type =="tilt"){
+            deltaValue =3600;
+          }
+          that[data.type+"El"].value = (that[data.type+"El"].value*1)+ (data.delta ? deltaValue : (deltaValue*-1));
           that[data.type+"El"].dispatchEvent(event1);
         }
       // console.log(that.zoomEl.value);
