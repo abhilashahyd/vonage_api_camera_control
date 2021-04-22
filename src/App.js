@@ -89,7 +89,40 @@ class App extends Component {
 
   componentDidMount() {
     const session = otSDK.session;
-    otSDK.connect().then(() => this.setState({ session, connected: true }));
+    otSDK.connect().then(() => {this.setState({ session, connected: true })
+   this.state.session.connections.forEach(function(x,y){console.log(x,y)});
+   if(this.state.session.connections.length() ==1){
+     debugger;
+     this.state.session.connection.data={hero:true};
+    this.state.session.signal(
+      {
+        // to: this.state.session.connection,
+        data:{
+          type:'hero',
+          delta: this.state.session.connection.id
+        }
+      },
+      function(error) {
+        if (error) {
+          console.log("signal error ("
+                       + error.name
+                       + "): " + error.message);
+        } else {
+          console.log("signal sent.!!");
+        }
+      }
+    );
+   }else{
+    this.state.session.connections.forEach(function(x,y){
+      debugger;
+      if(x.data && x.data.hero){
+        this.state.heroId = x.data.id;
+        console.log("hero found");
+      }
+    });
+   }
+  });
+   
     // this.zoomEl = document.querySelector("input[name='zoom']");
     
   }
@@ -101,7 +134,8 @@ class App extends Component {
       if (streamMap && streamMap[stream.id]) { return; }
       const type = stream.videoType;
       otSDK.subscribe(stream, `${type}SubscriberContainer`, callProperties)
-      .then(() => this.setState(otSDK.state()));
+      .then(() => { this.setState(otSDK.state()) 
+        console.log("=====camera publisher id=====",stream);});
     };
 
     // Subscribe to initial streams
@@ -117,23 +151,38 @@ class App extends Component {
     otSDK.publish('cameraPublisherContainer', callProperties)
     .then((publisher) => {
       this.setState(Object.assign({}, otSDK.state(), { localPublisherId: publisher.id }));
+      console.log("=====My publisher id=====",publisher.id);
     }).catch(error => console.log(error));
 
+    
     this.setState({ active: true });
     const that=this;
-
+    console.log("=====My Connection Id=====",session.connection.id);
     session.on("signal", function(event) {
       console.log("Signal sent from connection " + event.from.id);
-      console.log(that.zoomEl.value);
-      that.zoomEl.value = (that.zoomEl.value*1) + 10;
+      // if(event.from.id != that.state.session.connection.id ){
+        const data = JSON.parse(event.data);
+        if(data.type =="zoom" || data.type =="pan"  || data.type =="tilt" ){
+          var event1 = document.createEvent('Event');
+          event1.initEvent('input', true, true);
+          console.log(that[data.type+"El"]);
+          that[data.type+"El"].value = (that[data.type+"El"].value*1)+ (data.delta ? 10 : -10);
+          that[data.type+"El"].dispatchEvent(event1);
+        }
+      // console.log(that.zoomEl.value);
+      // that.zoomEl.value = (that.zoomEl.value*1) + 10;
       console.log(that.zoomEl.value);
       // that.zoomEl.click();
-      var event = document.createEvent('Event');
-      event.initEvent('input', true, true);
-
-      that.zoomEl.dispatchEvent(event);
+     
       console.log(that);
       console.log('Here only');
+      // }else if(event.from.id != that.state.session.connection.id){
+      //   if(event.data.type =="hero"){
+      //     that.state.heroId = event.from.id;
+      //     console.log("====hero received", that.state.heroId);
+      //   }
+         
+      // }
       // handleSignal(100);
       // Process the event.data property, if there is any data.
       // console.log(this.zoomRef);
@@ -158,16 +207,21 @@ class App extends Component {
  sendSignal(){
    const conId= this.state.session.connection;
    console.log(conId);
+   console.log("signal sent by button", arguments);
+   var data = {
+    type:arguments[1],
+    delta: arguments[2]
+  };
   this.state.session.signal(
     {
-      // to: this.state.session.connection,
-      data:"hello"
+       to: arguments[0],
+      data:JSON.stringify(data)
     },
     function(error) {
       if (error) {
         console.log("signal error ("
                      + error.name
-                     + "): " + error.message);
+                     + "): " + error.message,error.code);
       } else {
         console.log("signal sent.");
       }
@@ -187,8 +241,28 @@ class App extends Component {
       cameraSubscriberClass,
       screenSubscriberClass,
     } = containerClasses(this.state);
-  
+    let connectionId = null,connectionCtrls=[];
     this.zoomEl = document.querySelector("input[name='zoom']");
+    this.panEl = document.querySelector("input[name='pan']");
+    this.tiltEl = document.querySelector("input[name='tilt']");
+    if (this.state.session) {
+      this.state.session.connections.forEach(function (x, y) { console.log(x, y) });
+      connectionId = this.state.session.connection.id;
+      const that=this;
+      this.state.session.connections.map(function (connection) {
+        if (connectionId != connection.id) {
+          connectionCtrls.push(<div> {connection.id}
+            <div class="zoomperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'zoom', true)}> Zoom +</button>
+              <button onClick={that.sendSignal.bind(that, connection, 'zoom', false)}> Zoom -</button></div>
+            <div class="panperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'pan', true)}> pan +</button>
+              <button onClick={that.sendSignal.bind(that, connection, 'pan', false)}> Pan -</button></div>
+            <div class="tiltperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'tilt', true)}> tilt +</button>
+              <button onClick={that.sendSignal.bind(that, connection, 'tilt', false)}> tilt -</button></div>
+          </div>);
+        }
+      }, this);
+    }
+    
     return (
       <div className="App">
         <div className="App-header">
@@ -208,9 +282,12 @@ class App extends Component {
             <div id="cameraSubscriberContainer" className={cameraSubscriberClass}></div>
             <div id="screenSubscriberContainer" className={screenSubscriberClass}></div>
           </div>
+          <div>My Connection Id {this.state.session && this.state.session.connection.id}</div>
           <div id="chat" className="App-chat-container"></div>
-          <button onClick={this.sendSignal}>Send Signal</button>
+         
+          {connectionCtrls}
         </div>
+        
       </div>
     );
   }
