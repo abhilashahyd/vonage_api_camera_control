@@ -256,11 +256,11 @@ class App extends Component {
       this.state.session.connections.map(function (connection) {
         if (connectionId != connection.id) {
           connectionCtrls.push(<div> {connection.id}
-            <div class="zoomperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'zoom', true)}> Zoom +</button>
+            <div className="zoomperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'zoom', true)}> Zoom +</button>
               <button onClick={that.sendSignal.bind(that, connection, 'zoom', false)}> Zoom -</button></div>
-            <div class="panperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'pan', true)}> pan +</button>
+            <div className="panperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'pan', true)}> pan +</button>
               <button onClick={that.sendSignal.bind(that, connection, 'pan', false)}> Pan -</button></div>
-            <div class="tiltperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'tilt', true)}> tilt +</button>
+            <div className="tiltperconnection"> <button onClick={that.sendSignal.bind(that, connection, 'tilt', true)}> tilt +</button>
               <button onClick={that.sendSignal.bind(that, connection, 'tilt', false)}> tilt -</button></div>
           </div>);
         }
